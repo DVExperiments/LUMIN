@@ -3,4 +3,4 @@
 
 .quality-actions{display:flex;gap:7px;margin-top:12px}.quality-actions button{flex:1;border:1px solid var(--line);background:transparent;color:#8195aa;padding:10px 4px;font-size:9px;letter-spacing:.08em}.quality-actions button.selected{border-color:#82bec5;background:#243a45;color:#e3f7f7}
 
-#volume{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen;opacity:.95} @media(prefers-reduced-motion:reduce){#volume{opacity:.72}}
+

@@ -1,71 +1,90 @@
-import {blueprint,posture,TAU,clamp,mix,hash} from './anatomy.js';
-const rgba=(r,g,b,a)=>`rgba(${r|0},${g|0},${b|0},${clamp(a)})`;
+import {clamp,hash,TAU} from './anatomy.js';
+import {phenotype,shapeAt} from './metamorphosis.js';
+const RG=(r,g,b,a)=>`rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${clamp(a)})`;
+const C={ivory:[245,225,207],lavender:[158,139,220],aqua:[112,220,218],rose:[230,137,182],deep:[50,60,125]};
+function pathPoints(c,pts,close=true){c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));if(close)c.closePath();}
+function gradient(c,x,y,r,stops){const g=c.createRadialGradient(x,y,0,x,y,r);stops.forEach(([pos,col])=>g.addColorStop(pos,col));return g;}
 export class Renderer{
  constructor(canvas,engine,quality='balanced'){
-  this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});this.engine=engine;this.quality=quality;this.w=0;this.h=0;this.dpr=1;this.seed=0;this.blueprint=null;
-  this.stars=Array.from({length:210},(_,i)=>({x:hash(i*9+4),y:hash(i*13+11),a:hash(i+17),r:.25+hash(i+81)*1.2}));
-  this.sparks=Array.from({length:650},(_,i)=>({theta:hash(i+32)*TAU,r:Math.sqrt(hash(i*6+33)),phase:hash(i*19+7)*TAU,size:hash(i*23+6)}));
+  this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false});this.engine=engine;this.quality=quality;this.seed=null;
+  this.stars=Array.from({length:230},(_,i)=>({x:hash(i*13+1),y:hash(i*31+6),r:.3+hash(i*7+11)*1.2,a:.08+hash(i*19+4)*.3}));
+  this.dust=Array.from({length:170},(_,i)=>({u:hash(i*73+5),v:hash(i*21+8),phase:hash(i*99+4)*TAU,r:hash(i*11+4)}));
   this.resize();window.addEventListener('resize',()=>this.resize());
  }
- resize(){this.w=window.innerWidth;this.h=window.innerHeight;this.dpr=Math.min(devicePixelRatio||1,{eco:1,balanced:1.5,ultra:2}[this.quality]||1);this.canvas.width=Math.max(1,Math.round(this.w*this.dpr));this.canvas.height=Math.max(1,Math.round(this.h*this.dpr));this.canvas.style.width=this.w+'px';this.canvas.style.height=this.h+'px';this.ctx?.setTransform(this.dpr,0,0,this.dpr,0,0);}
+ resize(){this.w=innerWidth;this.h=innerHeight;this.dpr=Math.min(devicePixelRatio||1,{eco:1,balanced:1.5,ultra:2}[this.quality]);this.canvas.width=Math.round(this.w*this.dpr);this.canvas.height=Math.round(this.h*this.dpr);this.canvas.style.width=this.w+'px';this.canvas.style.height=this.h+'px';this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);}
  setQuality(q){this.quality=q;this.resize();}
- palette(){const e=this.engine,w=e.current,a=e.adapt;const cold=clamp(a.cold*.7+clamp((16-w.temperature)/38)*.3),wet=clamp(a.wet*.6+w.humidity*.004);return {pearl:[mix(255,154,cold),mix(228,235,cold),mix(202,255,cold)],silk:[mix(244,95,cold),mix(165,190,cold),mix(176,240,cold)],iris:[mix(155,95,wet),mix(111,155,cold),mix(216,250,wet)],blue:[105,173,225],warm:[255,236,195]};}
- draw(){const c=this.ctx;if(!c)return;const e=this.engine,w=e.current,s=e.state,a=e.adapt,t=e.time,W=this.w,H=this.h;const eco=this.quality==='eco',ultra=this.quality==='ultra',still=e.motion===0;const motion=still?.045:1;
- if(this.seed!==e.seed){this.seed=e.seed;this.blueprint=blueprint(e.seed,a);}const anatomy=this.blueprint,P=this.palette(),form=posture(s,a,w,e.attention.strength);const small=Math.min(W,H),mobile=W<700;
- // Emphasise a continuous body rather than an isolated stellar core.
- const radius=Math.min(small*(mobile?.27:.34),mobile?220:365);const cx=W*(mobile?.50:.535)+Math.sin(t*.12)*radius*.045*motion,cy=H*(mobile?.45:.51)+Math.cos(t*.093)*radius*.04*motion;
- const wind=clamp(w.wind/85),dir=(w.direction-90)*Math.PI/180,windX=Math.cos(dir)*wind,windY=Math.sin(dir)*wind;
- const focus=e.attention;const fx=(focus.x-cx)/Math.max(radius,1),fy=(focus.y-cy)/Math.max(radius,1);const focusAmount=clamp(focus.strength*s.curiosity*.18);
- const driftX=(focusAmount*clamp(fx,-2,2)+e.roam.x*.035)*motion,driftY=(focusAmount*clamp(fy,-2,2)+e.roam.y*.04)*motion;
- const span=radius*form.open;
- // Map polar tissue coordinates through one continuous deformed body; appendages share the same skeleton.
- const point=(theta,r,phase=0)=>{
-  const n=Math.sin(theta*anatomy.lobes+t*.23*motion+e.seed*.001)*.07+Math.sin(theta*(anatomy.lobes+4)-t*.16*motion+phase)*.026;
-  const folds=Math.sin(theta*anatomy.folds+t*.32*motion+phase)*form.fold*.19;
-  const angle=theta+Math.sin(r*4-t*.19*motion+phase)*.025*r+Math.sin(theta*3+t*.13*motion)*.02*r;
-  const breadth=(1+n+folds*(.4+.6*r));let x=Math.cos(angle)*r*span*breadth*form.stretch;let y=Math.sin(angle)*r*span*breadth/(1+a.wind*.12);
-  x+=windX*radius*.19*r*r+Math.sin(r*8+t*.51*motion+phase)*radius*.014*r*form.flutter;
-  y+=windY*radius*.19*r*r+Math.cos(r*7+t*.44*motion+phase)*radius*.013*r*form.flutter;
-  x+=driftX*radius*r*.24;y+=driftY*radius*r*.24;
-  const inward=clamp(e.startle)*.13*Math.exp(-r*1.5);return [cx+x*(1-inward),cy+y*(1-inward)];
- };
- const path=(n,fn)=>{c.beginPath();for(let i=0;i<=n;i++){const p=fn(i/n);if(i===0)c.moveTo(...p);else c.lineTo(...p);}};
- c.fillStyle='#040813';c.fillRect(0,0,W,H);const bg=c.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.8);bg.addColorStop(0,'#11172b');bg.addColorStop(.40,'#090f1d');bg.addColorStop(1,'#040711');c.fillStyle=bg;c.fillRect(0,0,W,H);
- for(const st of this.stars){c.fillStyle=rgba(150,183,223,st.a*.24*(.65+.35*Math.sin(t*.28+st.x*27)));c.beginPath();c.arc(st.x*W,st.y*H,st.r,0,TAU);c.fill();}
- c.save();c.globalCompositeOperation='screen';
- // Atmospheric halo sits behind, never substitutes for actual anatomy.
- const halo=c.createRadialGradient(cx,cy,radius*.12,cx,cy,radius*1.85);halo.addColorStop(0,rgba(...P.iris,.095));halo.addColorStop(.38,rgba(...P.iris,.075));halo.addColorStop(.7,rgba(...P.blue,.021));halo.addColorStop(1,rgba(...P.iris,0));c.fillStyle=halo;c.beginPath();c.arc(cx,cy,radius*1.85,0,TAU);c.fill();
- // Tissue lobes: overlapping folded translucent sheets anchored to the same centre.
- const layers=eco?2:ultra?4:3;for(let layer=layers-1;layer>=0;layer--){const rr=.38+layer/layers*.67;const phase=layer*1.31;path(eco?90:155,u=>point(u*TAU,rr,phase));c.closePath();const grad=c.createRadialGradient(cx-radius*.1,cy-radius*.14,radius*.03,cx,cy,span*1.4);grad.addColorStop(0,rgba(...P.warm,.03));grad.addColorStop(.28,rgba(...P.iris,.043+layer*.004));grad.addColorStop(.65,rgba(...(layer%2?P.silk:P.blue),.016+layer*.002));grad.addColorStop(1,rgba(...P.blue,.002));c.fillStyle=grad;c.fill();c.lineWidth=layer===layers-1?1.6:.8;c.strokeStyle=rgba(...(layer%3?P.iris:P.pearl),.12+(1-layer/layers)*.11);c.stroke();}
- // Radial vasculature embedded in membrane, curving with the deformation field.
- for(let i=0;i<anatomy.ribCount;i+=2){
-  const theta=i/anatomy.ribCount*TAU,phase=hash(i+e.seed)*TAU;
-  path(eco?18:35,u=>point(theta+.17*u*u*Math.sin(phase+t*.12*motion),.11+u*.90,phase));
-  c.lineWidth=i%5===0?1.5:.6;c.strokeStyle=rgba(...(i%3===0?P.pearl:P.iris),i%5===0?.28:.12);c.stroke();
- }
- // Organ-scale tendrils, tapered, with bifurcations and an articulated silhouette.
- anatomy.arms.forEach((arm,i)=>{
-  const theta=arm.angle,phase=arm.phase;const reach=arm.length*(.95+form.open*.26)*(1+wind*.19);const steps=eco?20:36;
-  const armPoint=u=>{const turn=arm.curve*u*u+Math.sin(u*5+t*(.35+form.flow*.2)*motion+phase)*(.085+form.flutter*.11)*u*u;
-   const pt=point(theta+turn,.31+u*reach,phase);pt[0]+=Math.sin(u*8+t*.21*motion+phase)*radius*.017*u;pt[1]+=Math.cos(u*7+t*.23*motion+phase)*radius*.017*u;return pt;};
-  // Draw a tapering translucent web between both edges of an appendage.
-  const segments=eco?15:25;c.beginPath();for(let j=0;j<=segments;j++){const u=j/segments,p=armPoint(u),tangent=theta+arm.curve*u,thick=radius*arm.width*(1-u)**1.25*(.5+form.thickness*.65);const px=p[0]-Math.sin(tangent)*thick,py=p[1]+Math.cos(tangent)*thick;if(j===0)c.moveTo(px,py);else c.lineTo(px,py);}for(let j=segments;j>=0;j--){const u=j/segments,p=armPoint(u),tangent=theta+arm.curve*u,thick=radius*arm.width*(1-u)**1.25*(.5+form.thickness*.65);c.lineTo(p[0]+Math.sin(tangent)*thick,p[1]-Math.cos(tangent)*thick);}c.closePath();c.fillStyle=rgba(...(i%3?P.iris:P.blue),.023+form.thickness*.018);c.fill();c.strokeStyle=rgba(...P.silk,.12);c.lineWidth=.55;c.stroke();
-  path(steps,armPoint);c.lineWidth=i%3===0?1.65:.88;c.strokeStyle=rgba(...(i%3===0?P.pearl:P.iris),.23+.11*(1-wind));c.stroke();
-  if(!eco){for(let b=0;b<arm.branches;b++){const start=.35+b*.17,end=Math.min(.99,start+.22+hash(i*71+b)*.16),side=b%2?-1:1;
-    const root=armPoint(start);path(15,u=>{const base=armPoint(mix(start,end,u));const deviation=u*u*radius*(.13+.11*hash(i+b*3))*side;return [mix(root[0],base[0],u)+Math.cos(theta+Math.PI/2)*deviation,mix(root[1],base[1],u)+Math.sin(theta+Math.PI/2)*deviation];});c.strokeStyle=rgba(...P.silk,.12+.13*(1-start));c.lineWidth=.7;c.stroke();}}
-  const tip=armPoint(.985);c.fillStyle=rgba(...P.pearl,.31);c.beginPath();c.arc(...tip,1.1,0,TAU);c.fill();
- });
- // Soft luminous inner organ: a large complex multilobed structure, not a pinprick.
- for(let shell=3;shell>=0;shell--){let rad=(.23+shell*.045)*(1+Math.sin(t*.54*motion)*.035);path(145,u=>{let th=u*TAU;let r=rad*(1+.12*Math.sin(th*(anatomy.lobes-1)+t*.4*motion)+.06*Math.cos(th*11-t*.22*motion));return point(th,r,shell*.42)});c.closePath();const g=c.createRadialGradient(cx-radius*.055,cy-radius*.06,0,cx,cy,span*rad*1.5);g.addColorStop(0,rgba(...P.warm,.15));g.addColorStop(.45,rgba(...(shell%2?P.pearl:P.silk),.07));g.addColorStop(1,rgba(...P.iris,.009));c.fillStyle=g;c.fill();c.strokeStyle=rgba(...(shell%2?P.pearl:P.silk),.28-shell*.023);c.lineWidth=shell===0?1.45:.85;c.stroke();}
- // Circulating luminous vesicles follow constrained paths, not a random free-floating cloud.
- const count=eco?160:ultra?620:360;for(let i=0;i<count;i++){const sp=this.sparks[i];const theta=sp.theta+(t*.026*motion*(i%2?1:-1));const r=sp.r*(.79+.07*Math.sin(t*.42*motion+sp.phase));const [x,y]=point(theta,r,sp.phase);const pulse=.55+.45*Math.sin(t*(.4+sp.size)*motion+sp.phase);c.fillStyle=rgba(...(i%7===0?P.pearl:i%5===0?P.blue:P.iris),(.12+sp.size*.4)*pulse);c.beginPath();c.arc(x,y,.35+sp.size*(i%21===0?1.9:1),0,TAU);c.fill();}
- // Cardiovascular pulse: multiple luminous chambers with asynchronous breathing.
- const pulse=1+.08*Math.sin(t*.88*motion)+.035*Math.sin(t*1.43*motion);const nucleus=span*.15*pulse;const glow=c.createRadialGradient(cx,cy,0,cx,cy,nucleus*4.8);glow.addColorStop(0,rgba(...P.warm,.72));glow.addColorStop(.10,rgba(...P.pearl,.37));glow.addColorStop(.28,rgba(...P.iris,.12));glow.addColorStop(1,rgba(...P.iris,0));c.fillStyle=glow;c.beginPath();c.arc(cx,cy,nucleus*4.8,0,TAU);c.fill();
- for(let chamber=0;chamber<3;chamber++){const ax=cx+Math.cos(chamber*TAU/3+t*.13*motion)*nucleus*.3,ay=cy+Math.sin(chamber*TAU/3+t*.13*motion)*nucleus*.3;const g=c.createRadialGradient(ax,ay,0,ax,ay,nucleus*.9);g.addColorStop(0,rgba(...P.warm,.7));g.addColorStop(.4,rgba(...P.pearl,.22));g.addColorStop(1,rgba(...P.iris,0));c.fillStyle=g;c.beginPath();c.arc(ax,ay,nucleus*.9,0,TAU);c.fill();}
- for(const burst of e.pulses){const u=burst.t/3.2;c.beginPath();c.ellipse(cx+(burst.x-cx)*.14,cy+(burst.y-cy)*.14,radius*(.10+u*1.62),radius*(.10+u*1.62),0,0,TAU);c.strokeStyle=rgba(...P.pearl,(1-u)*.33*burst.force);c.lineWidth=1.8*(1-u)+.2;c.stroke();}
- // A searching filament traces the last attention target, fading slowly after mouse exit.
- if(focus.strength>.035){let targetX=focus.x,targetY=focus.y;const d=Math.hypot(targetX-cx,targetY-cy);if(d<radius*2.9){const th=Math.atan2(targetY-cy,targetX-cx);const start=point(th,.47),end=point(th,clamp(d/span*.78,.7,1.55));c.beginPath();c.moveTo(...start);c.quadraticCurveTo(cx+(targetX-cx)*.55,cy+(targetY-cy)*.55,...end);c.strokeStyle=rgba(...P.pearl,.33*focus.strength*s.curiosity);c.lineWidth=1.1;c.stroke();}}
- c.restore();
- if(W>800){c.strokeStyle='rgba(153,179,213,.12)';for(let sign of [-1,1]){const x=cx+sign*radius*1.7;c.beginPath();c.moveTo(x-5,cy);c.lineTo(x+5,cy);c.moveTo(x,cy-5);c.lineTo(x,cy+5);c.stroke();}}
+ draw(){const c=this.ctx,e=this.engine,w=e.current,a=e.adapt,s=e.state,W=this.w,H=this.h,t=e.time*(e.motion===0?.012:1);
+  if(this.seed!==e.seed){this.seed=e.seed;this.ph=phenotype(e.seed,a);}const ph=this.ph;
+  const mobile=W<700,sz=Math.min(W,H)*(mobile?.215:.265)*(1+s.openness*.12);
+  const cx=W*(mobile?.50:.544)+Math.sin(t*.085+e.seed)*sz*.09+e.roam.x*sz*.02;
+  const cy=H*(mobile?.47:.50)+Math.sin(t*.13)*sz*.045;
+  const focus=e.attention.strength*clamp(s.curiosity);
+  const atX=clamp((e.attention.x-cx)/Math.max(sz,1),-1.4,1.4)*focus;
+  const atY=clamp((e.attention.y-cy)/Math.max(sz,1),-1.4,1.4)*focus;
+  const morph=(u,scale=1)=>{const v=shapeAt(u,ph,a,s,w,t);return [cx+(v.x+atX*.05)*sz*scale,cy+(v.y+atY*.05)*sz*scale];};
+  c.fillStyle='#050a15';c.fillRect(0,0,W,H);
+  const atmosphere=gradient(c,cx,cy,Math.max(W,H)*.63,[[0,'#162139'],[.36,'#0b1426'],[1,'#050a15']]);c.fillStyle=atmosphere;c.fillRect(0,0,W,H);
+  for(const st of this.stars){c.fillStyle=RG(181,211,235,st.a);c.beginPath();c.arc(st.x*W,st.y*H,st.r,0,TAU);c.fill();}
+  c.save();c.translate(cx,cy);c.scale(1,.83);let halo=gradient(c,0,0,sz*2.6,[[0,'rgba(111,117,213,.11)'],[.5,'rgba(70,110,190,.055)'],[1,'rgba(0,0,0,0)']]);c.fillStyle=halo;c.beginPath();c.arc(0,0,sz*2.6,0,TAU);c.fill();c.restore();
+  const pts=Array.from({length:140},(_,i)=>morph(i/140));
+  // Appendages live behind the mantle; every one joins a specific point on its contour.
+  const appendCount=this.quality==='eco'?8:11;
+  for(let i=0;i<appendCount;i++){
+   const limb=ph.appendages[i],u=limb.u,origin=morph(u),ang=u*TAU;
+   const axis=[Math.cos(ang),Math.sin(ang)];const max=sz*limb.reach*(.9+a.wind*.5)*(1+Math.sin(t*.22+limb.phase)*.07);
+   const bend=Math.sin(t*.40+limb.phase)*sz*.15+limb.curve*sz*.3;
+   const ex=origin[0]+axis[0]*max+bend+atX*sz*.16,ey=origin[1]+axis[1]*max*.83+Math.sin(t*.35+limb.phase)*sz*.17;
+   const cp1=[origin[0]+axis[0]*max*.38-limb.side*sz*.11,origin[1]+axis[1]*max*.2];
+   const cp2=[ex-axis[0]*max*.23+bend*.15,ey-axis[1]*max*.22];
+   c.beginPath();c.moveTo(...origin);c.bezierCurveTo(...cp1,...cp2,ex,ey);
+   c.lineCap='round';c.strokeStyle=RG(...(i%3===0?C.aqua:C.lavender),.065);c.lineWidth=(i%3===0?12:7)*limb.root;c.stroke();
+   c.strokeStyle=RG(...(i%3===0?C.aqua:C.ivory),.28);c.lineWidth=(i%3===0?1.9:1.2)*limb.root;c.stroke();
+   if(i%2===0){const bx=origin[0]*.35+ex*.65,by=origin[1]*.35+ey*.65;
+    c.beginPath();c.moveTo(bx,by);c.quadraticCurveTo(bx+limb.side*sz*.24,by-sz*.16,bx+limb.side*sz*.36,by-sz*.23);
+    c.strokeStyle=RG(...C.aqua,.18);c.lineWidth=.8;c.stroke();}
+   c.fillStyle=RG(...C.aqua,.44);c.beginPath();c.arc(ex,ey,1.4,0,TAU);c.fill();
+  }
+  // Opaque-enough internal mantle mass: layered, lit volume rather than only outlines.
+  c.save();pathPoints(c,pts);c.clip();
+  const tissue=gradient(c,cx-sz*.19,cy-sz*.3,sz*1.85,[[0,'rgba(215,176,220,.59)'],[.27,'rgba(127,125,204,.51)'],[.62,'rgba(74,94,166,.39)'],[1,'rgba(42,65,130,.3)']]);
+  c.fillStyle=tissue;c.fillRect(cx-sz*1.7,cy-sz*1.8,sz*3.4,sz*3.6);
+  // Mantle's internal folds are offset across its long axis, not concentric rosettes.
+  for(let j=0;j<10;j++){
+   const x=cx+sz*(-.48+j*.105),sway=Math.sin(j*.85+t*.36)*sz*.04;
+   c.beginPath();c.moveTo(x,cy-sz*1.6);c.bezierCurveTo(x-sz*.26+sway,cy-sz*.64,x+sz*.17,cy+sz*.22,x+sz*.07+sway,cy+sz*1.6);
+   c.strokeStyle=RG(...(j%3===0?C.aqua:C.lavender),.10+j%3*.02);c.lineWidth=1.5;c.stroke();
+  }
+  // Distributed luminescent organs with asynchronous circulatory rhythms.
+  for(let j=0;j<ph.chambers.length;j++){
+   const k=ph.chambers[j],x=cx+k.x*sz+Math.sin(t*.4+j)*sz*.04,y=cy+k.y*sz;
+   const rr=sz*k.r*(1+.06*Math.sin(t*(.6+j*.11)+j));
+   c.fillStyle=gradient(c,x,y,rr*2.8,[[0,j===0?'rgba(255,245,219,.78)':'rgba(169,237,231,.56)'],[.29,'rgba(190,177,231,.4)'],[1,'rgba(133,135,210,0)']]);c.beginPath();c.arc(x,y,rr*2.8,0,TAU);c.fill();
+   c.beginPath();c.ellipse(x,y,rr*(.59+.04*j),rr*(1.12-j*.13),j*.34,0,TAU);
+   c.strokeStyle=RG(...C.ivory,.40);c.lineWidth=1.2;c.stroke();
+  }
+  // Fine inner capillaries connect organs and create a visible anatomical flow.
+  for(let j=0;j<24;j++){
+   const f=j/24,x=cx+Math.sin(j*2.41)*sz*.45,y=cy+(f-.5)*sz*2.2;
+   c.beginPath();c.moveTo(cx-sz*.1,cy-sz*.2);c.bezierCurveTo(x*.4+cx*.6,y,x,cy+sz*.3,x+sz*.07*Math.sin(t*.28+j),y);
+   c.strokeStyle=RG(...(j%4===0?C.aqua:C.ivory),.09);c.lineWidth=.6;c.stroke();
+  }
+  const dustCount=this.quality==='eco'?65:this.quality==='ultra'?170:110;
+  for(let j=0;j<dustCount;j++){
+   const d=this.dust[j],xx=cx+(d.u-.5)*sz*1.85,yy=cy+(d.v-.5)*sz*2.55+Math.sin(t*.35+d.phase)*sz*.06;
+   c.fillStyle=RG(...(j%4===0?C.aqua:C.ivory),.10+d.r*.32);c.beginPath();c.arc(xx,yy,.35+d.r*1.15,0,TAU);c.fill();
+  }
+  c.restore();
+  // Rim illumination reveals a solid contour and readable body shape.
+  pathPoints(c,pts);c.fillStyle='rgba(130,139,207,.08)';c.fill();
+  c.strokeStyle='rgba(197,202,243,.39)';c.lineWidth=1.7;c.stroke();
+  pathPoints(c,pts.map(([x,y])=>[cx+(x-cx)*.94,cy+(y-cy)*.94]));c.strokeStyle='rgba(129,220,227,.11)';c.lineWidth=4;c.stroke();
+  const core=ph.chambers[0];const hx=cx+core.x*sz,hy=cy+core.y*sz;
+  c.fillStyle=gradient(c,hx,hy,sz*.62,[[0,'rgba(255,247,224,.52)'],[.20,'rgba(232,204,234,.19)'],[1,'rgba(180,144,222,0)']]);c.beginPath();c.arc(hx,hy,sz*.62,0,TAU);c.fill();
+  // The lower trailing vascular streamer grows with accumulated wind exposure.
+  const tail=sz*(.65+ph.tail*.5+a.wind*.75);const x0=cx+sz*.20,y0=cy+sz*.9;
+  c.beginPath();c.moveTo(x0,y0);c.bezierCurveTo(x0+sz*.38,cy+sz*1.28,x0+sz*.19+Math.sin(t*.24)*sz*.27,cy+tail*1.7,x0+sz*.16,cy+tail*2.05);
+  c.strokeStyle=RG(...C.aqua,.23);c.lineWidth=1.6;c.stroke();
+  for(const p of e.pulses){const q=p.t/3.2;c.beginPath();c.ellipse(p.x,p.y,sz*(.04+q*.66),sz*(.04+q*.66),0,0,TAU);c.strokeStyle=RG(...C.aqua,(1-q)*.26*p.force);c.lineWidth=1.5;c.stroke();}
+  if(W>800){c.strokeStyle='rgba(153,179,213,.09)';for(const side of [-1,1]){const x=cx+side*sz*1.9;c.beginPath();c.moveTo(x-5,cy);c.lineTo(x+5,cy);c.moveTo(x,cy-5);c.lineTo(x,cy+5);c.stroke();}}
  }
 }
