@@ -1,0 +1,193 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LUMIN — Development of a Living Weather Organism</title><meta name="description" content="Five versions of an AI-created living weather artwork, from First Light to Biogenesis."><style>
+:root{color-scheme:dark;--bg:#070e1d;--line:#2d394c;--txt:#e8edf5;--sub:#a4b4c8;--accent:#98e3df}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 65% 0%,#16243d 0%,var(--bg) 65%);color:var(--txt);font:16px/1.8 system-ui,-apple-system,Segoe UI,sans-serif}a{color:var(--accent)}a:hover{color:white}.top{position:sticky;top:0;z-index:10;backdrop-filter:blur(18px);background:#07101be5;border-bottom:1px solid #27384a;display:flex;gap:24px;align-items:center;justify-content:space-between;padding:15px max(4vw,20px)}.brand{font-size:16px;font-weight:750;letter-spacing:.33em}.top a{font-size:13px;text-decoration:none}.pill{border:1px solid #6cb4bb;border-radius:40px;padding:8px 15px}main{max-width:1050px;margin:auto;padding:70px 28px 100px}h1{font-size:clamp(3.8rem,9vw,7.6rem);letter-spacing:-.075em;line-height:1.03;margin:.1em 0;color:#f6f5fb}h2{font-size:clamp(1.7rem,4vw,2.45rem);letter-spacing:-.045em;line-height:1.2;margin-top:3.1em;padding-top:.65em;border-top:1px solid var(--line)}h1+h2{border:0;padding:0;margin-top:.4em;font-size:1.25rem;text-transform:uppercase;letter-spacing:.16em;color:var(--accent)}p,li{max-width:850px}strong{color:#fff}blockquote{border-left:3px solid var(--accent);margin:2.5em 0;padding:.7em 1.5em;background:#15223a;color:#d6e8f0}blockquote p{margin:.2em}img{width:100%;display:block;border-radius:16px;border:1px solid #354259;box-shadow:0 25px 70px #02050a60;margin:1.5em 0}table{border-collapse:collapse;width:100%;font-size:14px;margin:26px 0}td,th{border-bottom:1px solid var(--line);padding:13px 14px;text-align:left;vertical-align:top}th{color:var(--accent);font-size:12px;letter-spacing:.08em;text-transform:uppercase}tr:nth-child(2n){background:#111d30}hr{border:0;border-top:1px solid var(--line);margin-top:60px}ol,ul{padding-left:25px}footer{padding:25px;text-align:center;border-top:1px solid var(--line);color:var(--sub);font-size:13px}@media(max-width:700px){main{padding:35px 18px}.top{padding:12px 15px}.top .pill{font-size:11px}table{font-size:12px}td,th{padding:8px}h2{margin-top:2.1em}}
+</style></head><body><header class="top"><span class="brand">✳ LUMIN</span><nav><a class="pill" href="https://YOUR-USERNAME.github.io/LUMIN/">Launch the artwork ↗</a></nav></header><main><h1>LUMIN: The Living Weather Organism</h1>
+<h2>Development report — AI web application challenge</h2>
+<p><strong>Project:</strong> LUMIN · <strong>Final submission:</strong> v5.0 <em>Biogenesis</em> · <strong>Development date:</strong> 17 October 2026<br />
+<strong>Format:</strong> Browser-based generative artwork · <strong>Developer:</strong> ChatGPT (GPT-6), directed and evaluated iteratively by a human project lead<br />
+<strong>Competition:</strong> An independent head-to-head development challenge involving ChatGPT and Claude<br />
+<strong>Project link:</strong> <a href="https://YOUR-USERNAME.github.io/LUMIN/">Launch LUMIN</a> <em>(replace this address with the live LUMIN URL before publishing)</em></p>
+<blockquote>
+<p><strong>At a glance:</strong> Five releases transformed LUMIN from a small glowing radial particle organism into a larger, asymmetric and layered digital lifeform. The underlying goal remained constant: use real-world weather and accumulated environmental history to influence a persistent organism's appearance and behaviour. The major lesson was that functioning code and passing tests do not prove visual quality; feedback from actual browser screenshots drove the most consequential redesigns.</p>
+</blockquote>
+<h2>1. The challenge</h2>
+<p>The challenge was to build a beautiful, original, lightweight web application that could run on static hosting and inspire an immediate sense of wonder. Its centrepiece would be an autonomous, artificial organism made of light. It would react to real-world weather and user interaction, but the more difficult requirement was <strong>memory</strong>: two organisms experiencing the same weather now should be capable of looking different because their histories differ.</p>
+<p>The original brief prescribed a manual location picker, weather obtained preferably via Open-Meteo, a laboratory for simulating conditions without contaminating real history, an observatory for internal state, persistent browser storage, import/export, responsiveness, accessibility, and no microphone or camera features. It also established a weighted evaluation rubric for the eventual comparison.</p>
+<p>This was not an exercise in producing a single illustration. The intended deliverable was a working website with source code, documentation, tests and a GitHub Pages-ready release.</p>
+<h2>2. Creative and technical direction</h2>
+<p>The application's visual identity was established early: a near-black atmospheric background, restrained editorial typography, sparse labels, a minimal control surface and a glowing organism occupying the main canvas. The human project lead preferred to preserve this interface throughout the iterations. The organism itself became the focus of increasingly critical refinement.</p>
+<p>LUMIN was built with browser-native JavaScript, Canvas 2D, CSS and HTML, with an experimental WebGL2 rendering layer in v3.0. The final release returned to Canvas 2D. Open-Meteo supplies current and forecast/modelled weather context; local browser storage preserves environmental records and the organism's seeded identity. Behaviour is driven by interacting internal variables and smooth interpolation rather than weather-to-colour shortcuts. The application is designed for static deployment, with no mandatory sign-in or paid API.</p>
+<h2>3. Version history</h2>
+<h3>v1.0 — First Light</h3>
+<p><img src="assets/lumin-v1.webp" alt="LUMIN v1.0 screenshot" /></p>
+<p><strong>What shipped:</strong> A luminous central core, many thin radial filaments, a particle field, pointer response, live weather, a manual Weather Laboratory, an Observatory, environmental memory and browser persistence. The minimalist interface was already well received.</p>
+<p><strong>What testing revealed:</strong> The first real-browser screenshot showed an elegant composition, but a tiny central body surrounded by fine lines. The result looked more like a generative particle visualiser than a coherent living organism. Functionality alone was insufficient. <strong>9 automated tests were reported passing.</strong></p>
+<p><strong>Decision:</strong> Preserve the interface; substantially enlarge and reorganise the organism.</p>
+<h3>v2.0 — Anatomical Bloom</h3>
+<p><img src="assets/lumin-v2.webp" alt="LUMIN v2.0 screenshot" /></p>
+<p><strong>What changed:</strong> A larger multilayered centre, branching extensions, internally related elements, persistent cursor attention and more elaborate deformation. The focus shifted toward giving the organism anatomy rather than independent decorative strands.</p>
+<p><strong>What testing revealed:</strong> The screenshot was more coherent, yet the concentric contours produced a flower-like or audio-visualiser appearance. The organism was still dominated by radial symmetry. <strong>11 automated tests were reported passing.</strong></p>
+<p><strong>Decision:</strong> Experiment with three-dimensional rendering and asymmetry.</p>
+<h3>v3.0 — Emergence</h3>
+<p><img src="assets/lumin-v3.webp" alt="LUMIN v3.0 screenshot" /></p>
+<p><strong>What changed:</strong> An experimental WebGL2 layer attempted volumetric-looking geometry, surface deformation and depth-dependent shading, alongside the prior Canvas composition. A Canvas fallback was retained.</p>
+<p><strong>What testing revealed:</strong> Despite the more ambitious rendering architecture, the user's screenshot looked remarkably similar to v2.0. The existing Canvas foreground was still visually dominant, and the 3D contribution was not clearly visible. The headless graphics environment could not reliably verify the new appearance. <strong>13 automated tests were reported passing.</strong></p>
+<p><strong>Decision:</strong> Treat this as a valuable failed visual experiment. Stop layering rendering techniques onto the same radial composition; replace the organism's underlying silhouette.</p>
+<h3>v4.0 — Metamorphosis</h3>
+<p><img src="assets/lumin-v4.webp" alt="LUMIN v4.0 screenshot" /></p>
+<p><strong>What changed:</strong> The dominant radial bloom was replaced by a substantial, asymmetrical mantle with visible internal luminous chambers, attached appendages, and distinct tissue-like surfaces. The active WebGL overlay was removed in favour of a coherent Canvas 2D renderer.</p>
+<p><strong>What testing revealed:</strong> The screenshot showed the first major departure from a mathematical flower: LUMIN now resembled a translucent single-celled lifeform. However, the surface looked flat, its three internal ovals felt ornamental, and the appendages were long and disconnected. The creature also occupied too much of the viewport. <strong>16 automated tests were reported passing.</strong></p>
+<p><strong>Decision:</strong> Keep the silhouette, reduce its scale, and make the internal anatomy and appendages structurally interconnected.</p>
+<h3>v5.0 — Biogenesis — final competition submission</h3>
+<p><strong>What changed:</strong> The body was scaled down to recover negative space. Overlapping translucent-looking tissue sheets, interconnected chambers, travelling light pulses, capillary pathways, tapered and branched appendages, and asynchronous internal rhythms were added. Seed-dependent anatomical parameters and sustained environmental exposure influence the creature's appearance. The existing weather, persistence and accessibility systems remained in place.</p>
+<p><strong>What was verified:</strong> The final source package reports <strong>19 automated Node tests passing</strong>, and the static build succeeded. A browser screenshot attempt timed out in the development environment. <strong>No verified v5.0 browser screenshot or device-specific frame-rate measurement was available when this report was prepared.</strong> The final image and motion quality should therefore be judged by viewing the published application, not by development claims alone.</p>
+<p><strong>Decision:</strong> Freeze this build as ChatGPT's competition submission rather than continually extending the iteration cycle.</p>
+<h2>4. The iteration process: what actually drove change</h2>
+<p>The key review loop was practical:</p>
+<ol>
+<li>The AI produced a versioned, GitHub Pages-ready build and source archive.</li>
+<li>The human project lead deployed the website and supplied an actual browser screenshot.</li>
+<li>The screenshot was compared against the challenge's artistic ambition: coherence, depth, physicality, autonomy and weather-shaped individuality.</li>
+<li>The AI proposed the next architectural or artistic correction and implemented another release.</li>
+<li>Automated tests and build checks were run, but screenshot-based evaluation remained essential.</li>
+</ol>
+<p>The most consequential lesson appeared between v2.0 and v3.0. Adding WebGL increased technical sophistication without yielding a convincing visual improvement. The most visible breakthrough was v4.0, where the design moved away from radial symmetry toward a recognisable body. The final iteration refined that new direction rather than repeating the earlier approach of accumulating more lines and particles.</p>
+<p>The development process also demonstrates an important limitation of AI-generated software: it is relatively easy to generate features, working interfaces and passing unit tests; it is harder to guarantee that the <em>perceptual result</em> matches the intended experience. Here, the human's screenshots and critique supplied that missing feedback loop.</p>
+<h2>5. Core systems in the final application</h2>
+<table>
+<thead>
+<tr>
+  <th>System</th>
+  <th>Purpose and implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Procedural organism</td>
+  <td>Identity-seeded anatomy with membranes, chambers, attached branches, deformation and internal light circulation.</td>
+</tr>
+<tr>
+  <td>Weather connection</td>
+  <td>Open-Meteo data for temperature, wind, precipitation, humidity, cloud cover and day/night context.</td>
+</tr>
+<tr>
+  <td>Environmental memory</td>
+  <td>Timestamped samples, exposure summaries and persistent adaptation parameters, stored locally.</td>
+</tr>
+<tr>
+  <td>Behaviour</td>
+  <td>Interacting internal state variables, smooth responses, autonomous motion and reactions to pointer/touch disturbance.</td>
+</tr>
+<tr>
+  <td>Weather Laboratory</td>
+  <td>Manual weather controls, kept separate from recorded real-world exposure.</td>
+</tr>
+<tr>
+  <td>Observatory</td>
+  <td>Access to weather, behavioural and adaptation information.</td>
+</tr>
+<tr>
+  <td>Preservation</td>
+  <td>Browser save/restore and JSON import/export.</td>
+</tr>
+<tr>
+  <td>Performance and access</td>
+  <td>Quality presets, responsive layout, reduced-motion accommodation and dependency-light static hosting.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Accuracy note:</strong> Weather history uses the data available through Open-Meteo, including modelled/forecast hourly context; it must not be interpreted as uninterrupted sensor observation. When the page is closed, it does not continue simulating in the background. Unavailable weather periods cannot reliably be reconstructed. These limitations matter because LUMIN is an artistic system, not a scientific weather instrument.</p>
+<h2>6. Verification, unresolved questions and constraints</h2>
+<table>
+<thead>
+<tr>
+  <th>Release</th>
+  <th style="text-align:right">Reported automated tests</th>
+  <th>Visual evidence available</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>v1.0</td>
+  <td style="text-align:right">9 passed</td>
+  <td>Real-browser screenshot supplied by project lead</td>
+</tr>
+<tr>
+  <td>v2.0</td>
+  <td style="text-align:right">11 passed</td>
+  <td>Real-browser screenshot supplied by project lead</td>
+</tr>
+<tr>
+  <td>v3.0</td>
+  <td style="text-align:right">13 passed</td>
+  <td>Real-browser screenshot; WebGL contribution appeared limited</td>
+</tr>
+<tr>
+  <td>v4.0</td>
+  <td style="text-align:right">16 passed</td>
+  <td>Real-browser screenshot supplied by project lead</td>
+</tr>
+<tr>
+  <td>v5.0</td>
+  <td style="text-align:right">19 passed</td>
+  <td>Not independently screenshot-verified at report time</td>
+</tr>
+</tbody>
+</table>
+<p>These counts describe automated tests reported during development, <strong>not</strong> an independent external audit. They primarily cover logic, weather processing, identity, adaptation and persistence. They do not establish 60 FPS, cross-device consistency, long-term real-world adaptation quality or convincingly lifelike motion. Those require separate observation and testing.</p>
+<p>Other known constraints include local browser data being cleared by the user or browser, network outages requiring labelled cached/demo weather, varying graphical performance on mobile devices, and the interpretive—rather than biologically simulated—nature of the creature.</p>
+<h2>7. Competition evaluation framework</h2>
+<p>The original brief assigned the following weights. It is best to apply them <em>after</em> both competitors have been tested under comparable conditions, rather than presuming a winner.</p>
+<table>
+<thead>
+<tr>
+  <th>Category</th>
+  <th style="text-align:right">Weight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Visual impact and artistic quality</td>
+  <td style="text-align:right">25%</td>
+</tr>
+<tr>
+  <td>Believability and organic behaviour</td>
+  <td style="text-align:right">20%</td>
+</tr>
+<tr>
+  <td>Weather integration</td>
+  <td style="text-align:right">15%</td>
+</tr>
+<tr>
+  <td>Memory and long-term adaptation</td>
+  <td style="text-align:right">20%</td>
+</tr>
+<tr>
+  <td>User experience and polish</td>
+  <td style="text-align:right">10%</td>
+</tr>
+<tr>
+  <td>Performance, reliability and code quality</td>
+  <td style="text-align:right">10%</td>
+</tr>
+</tbody>
+</table>
+<p>For a fair assessment, open each application on the same browser and computer, test a calm-weather baseline and several extreme laboratory conditions, interact using mouse/touch as supported, close and reopen the applications, and compare saved identities and environmental response. Evaluate the visual experience <em>in motion</em> as well as from screenshots. Check performance and accessibility separately. At the time of writing, <strong>Claude's build had not been provided for inspection</strong>, and no winner is asserted in this report.</p>
+<h2>8. Lessons learned</h2>
+<p><strong>Visual verification cannot be replaced by automated tests.</strong> The renderer can pass every unit test and still look too similar to the previous release.</p>
+<p><strong>More sophisticated technology is not automatically better design.</strong> The experimental WebGL2 layer did not noticeably improve the delivered composition. Returning to a coherent Canvas renderer was a deliberate design choice, not an assertion that Canvas is universally superior.</p>
+<p><strong>Preserving what works matters.</strong> The original interface was retained because the user's feedback consistently favoured it; the largest improvements came from changing the organism rather than reinventing the entire experience.</p>
+<p><strong>A living system needs legible cause and effect.</strong> Weather memory is most compelling when it visibly shapes structure, not merely when data exists in storage. The final design aimed to strengthen this relationship, though long-term results still require evaluation.</p>
+<p><strong>Human critique was central to the process.</strong> The human project lead supplied deployment, observation, aesthetic judgement, constraints and the decision to stop at v5.0. The AI generated implementations, explanations and corrections. Neither role alone describes the full project.</p>
+<h2>9. Conclusion</h2>
+<p>Across five versions, LUMIN evolved from a polished generative bloom into an increasingly anatomical weather-responsive digital organism. Its strongest feature is the connection between environmental conditions, saved history, procedural identity and a restrained, immersive presentation. The major development breakthrough was a willingness to abandon an attractive but limiting radial visual concept when multiple iterations failed to advance the intended feeling of life.</p>
+<p><strong>v5.0 <em>Biogenesis</em> is the final ChatGPT competition entry—not a proven winner.</strong> Its build and logic checks passed, while the remaining artistic and behavioural questions belong to real-world, side-by-side evaluation with Claude's implementation.</p>
+<hr />
+<h3>Project resources</h3>
+<ul>
+<li><strong>Launch the artwork:</strong> <a href="https://YOUR-USERNAME.github.io/LUMIN/">LUMIN live website</a> <em>(replace URL)</em></li>
+<li><strong>Weather service:</strong> <a href="https://open-meteo.com/">Open-Meteo</a></li>
+<li><strong>Source licensing:</strong> MIT (as packaged with the LUMIN source)</li>
+<li><strong>Report assets:</strong> Screenshots of v1.0–v4.0 provided from live browser deployments; there is no v5.0 screenshot in this report.</li>
+</ul>
+<p><em>Prepared on 17 October 2026. This is a development-process report, not an independently audited product review. Claude's implementation and the competition outcome are intentionally excluded until they can be assessed.</em></p>
+</main><footer>LUMIN · AI development competition · 2026</footer></body></html>
