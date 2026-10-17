@@ -1,38 +1,71 @@
-const TAU=Math.PI*2;
-const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
-const fract=x=>x-Math.floor(x);
-const rand=n=>fract(Math.sin(n*127.1+78.233)*43758.5453);
-const lerp=(a,b,t)=>a+(b-a)*t;
-function rgba(r,g,b,a){return `rgba(${r|0},${g|0},${b|0},${clamp(a)})`}
+import {blueprint,posture,TAU,clamp,mix,hash} from './anatomy.js';
+const rgba=(r,g,b,a)=>`rgba(${r|0},${g|0},${b|0},${clamp(a)})`;
 export class Renderer{
- constructor(canvas,engine,quality='balanced'){this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});this.engine=engine;this.quality=quality;this.w=0;this.h=0;this.dpr=1;this.frame=0;this.last=0;this.fps=60;this.particles=Array.from({length:820},(_,i)=>({angle:rand(i+19)*TAU,rad:Math.sqrt(rand(i+912)),phase:rand(i+256)*TAU,size:rand(i+788),speed:.2+rand(i+1167)}));this.stars=Array.from({length:220},(_,i)=>({x:rand(i+310),y:rand(i+591),r:.3+rand(i+67)*1.2,a:rand(i+972)}));this.resize();window.addEventListener('resize',()=>this.resize());}
- resize(){this.w=window.innerWidth;this.h=window.innerHeight;const levels={eco:Math.min(devicePixelRatio||1,1),balanced:Math.min(devicePixelRatio||1,1.5),ultra:Math.min(devicePixelRatio||1,2)};this.dpr=levels[this.quality]||1;this.canvas.width=Math.round(this.w*this.dpr);this.canvas.height=Math.round(this.h*this.dpr);this.canvas.style.width=this.w+'px';this.canvas.style.height=this.h+'px';this.ctx.setTransform(this.dpr,0,0,this.dpr,0,0);}
- setQuality(q){this.quality=q;this.resize();}
- color(){const w=this.engine.current,a=this.engine.adapt,s=this.engine.state;const cold=clamp(a.cold*.7+clamp((14-w.temperature)/28)*.3),wet=clamp(a.wet*.5+w.humidity/200),night=clamp(1-(w.hour>=w.sunrise&&w.hour<=w.sunset?1:0));return {cold,wet,night,core:[lerp(255,153,cold),lerp(207,237,cold),lerp(161,255,cold)],outer:[lerp(245,79,cold),lerp(121,201,cold),lerp(183,250,cold)],violet:[lerp(181,92,wet),lerp(98,115,cold),lerp(229,254,wet)],glow:.7+night*.5+s.energy*.4};}
- draw(now){if(!this.ctx)return;const e=this.engine,w=e.current,s=e.state,a=e.adapt;const c=this.ctx;const W=this.w,H=this.h;this.frame++;const t=e.time,short=Math.min(W,H),reduced=e.motion===0;const q=this.quality;const low=q==='eco';const mult=low?.42:q==='ultra'?1.35:1;const hue=this.color();const cx=W*(W<720?.5:.52)+Math.sin(t*.21+e.seed)*short*.018*(reduced?.05:1),cy=H*(H<680?.46:.51)+Math.cos(t*.17+e.seed*.1)*short*.016*(reduced?.05:1);const scale=Math.min(short*.285,W*.34,280)*(W<650?.9:1);const wind=clamp(w.wind/70),direction=(w.direction-90)*Math.PI/180;const wx=Math.cos(direction)*wind,wy=Math.sin(direction)*wind;let rad=scale*(.91+s.openness*.22+a.wind*.17);const morph=(theta,depth=1)=>{const lobes=Math.sin(theta*7+t*.34+e.seed*.004)*.042+Math.cos(theta*11-t*.22)*.022+Math.sin(theta*3+t*.17)*.08;return 1+lobes*depth+(a.cold*.047*Math.cos(theta*13))*depth};
- c.fillStyle='#050812';c.fillRect(0,0,W,H);let bg=c.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.76);bg.addColorStop(0,'#111629');bg.addColorStop(.46,'#080c19');bg.addColorStop(1,'#03050d');c.fillStyle=bg;c.fillRect(0,0,W,H);
- c.save();for(let i=0;i<this.stars.length*(low?.5:1);i++){const p=this.stars[i];const f=.15+.22*(.5+.5*Math.sin(t*.31+i));c.fillStyle=rgba(152,181,216,p.a*f);c.beginPath();c.arc(p.x*W,p.y*H,p.r*(low?.7:1),0,TAU);c.fill();}c.restore();
- const tilt=a.wind*.44+wind*.45;const shearX=wx*scale*.22,shearY=wy*scale*.17;
- const pos=(theta,r,phase=0)=>{const m=morph(theta,1-r*.3);const d=rad*r*m;const wav=Math.sin(theta*5+t*.53+phase)*scale*.012*r;return {x:cx+Math.cos(theta)*d*(1+tilt*.13)+shearX*r*r+Math.cos(theta+Math.PI/2)*wav+Math.sin(theta*3+t*.27)*a.wet*scale*.015*r,y:cy+Math.sin(theta)*d*(1-tilt*.08)+shearY*r*r+Math.sin(theta+Math.PI/2)*wav*.8};};
- // distant auroral corona
- c.save();c.globalCompositeOperation='screen';for(let layer=4;layer>=0;layer--){const rr=rad*(.65+layer*.17);const grad=c.createRadialGradient(cx,cy,rr*.07,cx,cy,rr*1.16);grad.addColorStop(0,rgba(...hue.violet,0));grad.addColorStop(.56,rgba(...hue.violet,.019*hue.glow));grad.addColorStop(.9,rgba(...hue.outer,.007*hue.glow));grad.addColorStop(1,rgba(...hue.violet,0));c.fillStyle=grad;c.beginPath();c.ellipse(cx+shearX*.5,cy+shearY*.5,rr*1.2,rr*.94,-.16,0,TAU);c.fill();}
- // flowing field lines, intricately attached to a coherent centre
- const count=Math.floor((low?90:q==='ultra'?220:155)*mult);for(let i=0;i<count;i++){const theta=TAU*i/count;const phase=rand(i+e.seed)*TAU;const length=lerp(.68,1.65,rand(i*3+e.seed))*(1+a.wind*.42);const inner=.095+rand(i*7+e.seed)*.15;const bend=Math.sin(theta*4+phase+t*.48)*(.12+s.energy*.10)+Math.sin(theta*9-t*.31+phase)*.035;const segments=low?17:26;const pts=[];for(let j=0;j<=segments;j++){const u=j/segments;const twist=theta+bend*u*u+Math.sin(u*7-t*.44+phase)*.025*u+wx*u*.18;const r=inner+(length-inner)*u;const p=pos(twist,r,phase);p.x+=Math.sin(u*9+phase+t*.51)*scale*.021*u*s.tension;p.y+=Math.cos(u*9+phase+t*.41)*scale*.021*u*s.tension;pts.push(p);}const bright=rand(i+72);c.beginPath();c.moveTo(pts[0].x,pts[0].y);for(let j=1;j<pts.length-1;j++){const mx=(pts[j].x+pts[j+1].x)/2,my=(pts[j].y+pts[j+1].y)/2;c.quadraticCurveTo(pts[j].x,pts[j].y,mx,my);}c.lineTo(pts.at(-1).x,pts.at(-1).y);const mix=bright>.58?hue.core:bright>.3?hue.outer:hue.violet;const opacity=(.06+bright*.19)*(.5+s.energy*.65)*(1-clamp((length-1.2)*.35));c.strokeStyle=rgba(...mix,opacity);c.lineWidth=bright>.79?1.05:.55;c.stroke();if(bright>.89&&!low){c.lineWidth=3.5;c.strokeStyle=rgba(...mix,opacity*.11);c.stroke();}
+ constructor(canvas,engine,quality='balanced'){
+  this.canvas=canvas;this.ctx=canvas.getContext('2d',{alpha:false,desynchronized:true});this.engine=engine;this.quality=quality;this.w=0;this.h=0;this.dpr=1;this.seed=0;this.blueprint=null;
+  this.stars=Array.from({length:210},(_,i)=>({x:hash(i*9+4),y:hash(i*13+11),a:hash(i+17),r:.25+hash(i+81)*1.2}));
+  this.sparks=Array.from({length:650},(_,i)=>({theta:hash(i+32)*TAU,r:Math.sqrt(hash(i*6+33)),phase:hash(i*19+7)*TAU,size:hash(i*23+6)}));
+  this.resize();window.addEventListener('resize',()=>this.resize());
  }
- // anatomical membrane: gossamer concentric folded ribbons
- for(let shell=0;shell<11;shell++){const rr=.2+shell*.063;const steps=145;c.beginPath();for(let j=0;j<=steps;j++){const th=j/steps*TAU;const p=pos(th+Math.sin(th*6+t*.13)*.012,rr);if(j===0)c.moveTo(p.x,p.y);else c.lineTo(p.x,p.y);}c.closePath();const color=shell%3===0?hue.core:shell%3===1?hue.outer:hue.violet;c.lineWidth=shell===2?.95:.55;c.strokeStyle=rgba(...color,(.06+(1-shell/11)*.15)*(1+a.wet*.15));c.stroke();}
- // orbital veil with softly focused ribbons
- for(let layer=0;layer<3;layer++){c.save();c.translate(cx,cy);c.rotate(t*.02*(layer%2?1:-1)+layer*1.9+e.seed*.01);c.scale(1,.33+layer*.06);c.beginPath();c.ellipse(0,0,rad*(1.15+layer*.13),rad*(1.15+layer*.13),0,0,TAU);c.strokeStyle=rgba(...(layer===1?hue.outer:hue.violet),.08);c.lineWidth=layer===1?1.7:.9;c.stroke();c.restore();}
- // cellular sparks suspended within body and trailing away
- const particles=Math.floor((low?240:q==='ultra'?900:570)*mult);for(let i=0;i<particles;i++){const p=this.particles[i];const r=p.rad*(.35+Math.sin(t*.16*p.speed+p.phase)*.05)+.1;const theta=p.angle+t*(.015+p.speed*.014)*(i%2?1:-1);const out=pos(theta,r*(i%7===0?1.35:1),p.phase);const pulse=(.55+.45*Math.sin(t*(.6+p.speed)+p.phase));const dist=Math.hypot(out.x-cx,out.y-cy)/rad;const col=i%7===0?hue.outer:i%5===0?hue.violet:hue.core;const alpha=clamp((.1+p.size*.42)*pulse*(1-dist*.3));c.fillStyle=rgba(...col,alpha);c.beginPath();c.arc(out.x,out.y,(.35+p.size*(i%18===0?2:1.05))*(low?.8:1),0,TAU);c.fill();}
- // pulsating semi-transparent nucleus
- const breath=1+Math.sin(t*.76)*.065*s.energy;let coreRad=rad*(.14+s.cohesion*.04)*breath;let cg=c.createRadialGradient(cx,cy,0,cx,cy,coreRad*3.8);cg.addColorStop(0,rgba(255,246,219,.84));cg.addColorStop(.07,rgba(...hue.core,.45));cg.addColorStop(.18,rgba(...hue.outer,.24));cg.addColorStop(.46,rgba(...hue.violet,.06));cg.addColorStop(1,rgba(...hue.outer,0));c.fillStyle=cg;c.beginPath();c.arc(cx,cy,coreRad*3.8,0,TAU);c.fill();c.beginPath();for(let i=0;i<=100;i++){const th=i/100*TAU;const r=coreRad*(.72+.08*Math.sin(th*9+t*.72)+.055*Math.cos(th*5-t*.29));const x=cx+Math.cos(th)*r,y=cy+Math.sin(th)*r;if(i===0)c.moveTo(x,y);else c.lineTo(x,y);}c.closePath();const inner=c.createRadialGradient(cx-coreRad*.12,cy-coreRad*.16,0,cx,cy,coreRad);inner.addColorStop(0,'rgba(255,249,230,.94)');inner.addColorStop(.25,rgba(...hue.core,.66));inner.addColorStop(.68,rgba(...hue.outer,.18));inner.addColorStop(1,rgba(...hue.violet,.05));c.fillStyle=inner;c.fill();c.lineWidth=.9;c.strokeStyle=rgba(...hue.core,.48);c.stroke();
- // interference rings travel outward from interactions
- for(const pulse of e.pulses){const u=pulse.t/3.2;const radius=rad*(.1+u*1.9);c.beginPath();c.ellipse(cx+(pulse.x-cx)*.2,cy+(pulse.y-cy)*.2,radius,radius*(1-wind*.18),0,0,TAU);c.strokeStyle=rgba(...hue.core,(1-u)*.32*pulse.force);c.lineWidth=1.5*(1-u)+.25;c.stroke();}
- // organism's subtle focus toward pointer
- if(e.pointer.active){const dx=e.pointer.x-cx,dy=e.pointer.y-cy;const dist=Math.hypot(dx,dy);if(dist<rad*1.8){const alpha=(1-dist/(rad*1.8))*.18*s.sensitivity;c.beginPath();c.arc(e.pointer.x,e.pointer.y,7+Math.sin(t*3)*2,0,TAU);c.strokeStyle=rgba(...hue.core,alpha);c.lineWidth=.85;c.stroke();}}
+ resize(){this.w=window.innerWidth;this.h=window.innerHeight;this.dpr=Math.min(devicePixelRatio||1,{eco:1,balanced:1.5,ultra:2}[this.quality]||1);this.canvas.width=Math.max(1,Math.round(this.w*this.dpr));this.canvas.height=Math.max(1,Math.round(this.h*this.dpr));this.canvas.style.width=this.w+'px';this.canvas.style.height=this.h+'px';this.ctx?.setTransform(this.dpr,0,0,this.dpr,0,0);}
+ setQuality(q){this.quality=q;this.resize();}
+ palette(){const e=this.engine,w=e.current,a=e.adapt;const cold=clamp(a.cold*.7+clamp((16-w.temperature)/38)*.3),wet=clamp(a.wet*.6+w.humidity*.004);return {pearl:[mix(255,154,cold),mix(228,235,cold),mix(202,255,cold)],silk:[mix(244,95,cold),mix(165,190,cold),mix(176,240,cold)],iris:[mix(155,95,wet),mix(111,155,cold),mix(216,250,wet)],blue:[105,173,225],warm:[255,236,195]};}
+ draw(){const c=this.ctx;if(!c)return;const e=this.engine,w=e.current,s=e.state,a=e.adapt,t=e.time,W=this.w,H=this.h;const eco=this.quality==='eco',ultra=this.quality==='ultra',still=e.motion===0;const motion=still?.045:1;
+ if(this.seed!==e.seed){this.seed=e.seed;this.blueprint=blueprint(e.seed,a);}const anatomy=this.blueprint,P=this.palette(),form=posture(s,a,w,e.attention.strength);const small=Math.min(W,H),mobile=W<700;
+ // Emphasise a continuous body rather than an isolated stellar core.
+ const radius=Math.min(small*(mobile?.27:.34),mobile?220:365);const cx=W*(mobile?.50:.535)+Math.sin(t*.12)*radius*.045*motion,cy=H*(mobile?.45:.51)+Math.cos(t*.093)*radius*.04*motion;
+ const wind=clamp(w.wind/85),dir=(w.direction-90)*Math.PI/180,windX=Math.cos(dir)*wind,windY=Math.sin(dir)*wind;
+ const focus=e.attention;const fx=(focus.x-cx)/Math.max(radius,1),fy=(focus.y-cy)/Math.max(radius,1);const focusAmount=clamp(focus.strength*s.curiosity*.18);
+ const driftX=(focusAmount*clamp(fx,-2,2)+e.roam.x*.035)*motion,driftY=(focusAmount*clamp(fy,-2,2)+e.roam.y*.04)*motion;
+ const span=radius*form.open;
+ // Map polar tissue coordinates through one continuous deformed body; appendages share the same skeleton.
+ const point=(theta,r,phase=0)=>{
+  const n=Math.sin(theta*anatomy.lobes+t*.23*motion+e.seed*.001)*.07+Math.sin(theta*(anatomy.lobes+4)-t*.16*motion+phase)*.026;
+  const folds=Math.sin(theta*anatomy.folds+t*.32*motion+phase)*form.fold*.19;
+  const angle=theta+Math.sin(r*4-t*.19*motion+phase)*.025*r+Math.sin(theta*3+t*.13*motion)*.02*r;
+  const breadth=(1+n+folds*(.4+.6*r));let x=Math.cos(angle)*r*span*breadth*form.stretch;let y=Math.sin(angle)*r*span*breadth/(1+a.wind*.12);
+  x+=windX*radius*.19*r*r+Math.sin(r*8+t*.51*motion+phase)*radius*.014*r*form.flutter;
+  y+=windY*radius*.19*r*r+Math.cos(r*7+t*.44*motion+phase)*radius*.013*r*form.flutter;
+  x+=driftX*radius*r*.24;y+=driftY*radius*r*.24;
+  const inward=clamp(e.startle)*.13*Math.exp(-r*1.5);return [cx+x*(1-inward),cy+y*(1-inward)];
+ };
+ const path=(n,fn)=>{c.beginPath();for(let i=0;i<=n;i++){const p=fn(i/n);if(i===0)c.moveTo(...p);else c.lineTo(...p);}};
+ c.fillStyle='#040813';c.fillRect(0,0,W,H);const bg=c.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.8);bg.addColorStop(0,'#11172b');bg.addColorStop(.40,'#090f1d');bg.addColorStop(1,'#040711');c.fillStyle=bg;c.fillRect(0,0,W,H);
+ for(const st of this.stars){c.fillStyle=rgba(150,183,223,st.a*.24*(.65+.35*Math.sin(t*.28+st.x*27)));c.beginPath();c.arc(st.x*W,st.y*H,st.r,0,TAU);c.fill();}
+ c.save();c.globalCompositeOperation='screen';
+ // Atmospheric halo sits behind, never substitutes for actual anatomy.
+ const halo=c.createRadialGradient(cx,cy,radius*.12,cx,cy,radius*1.85);halo.addColorStop(0,rgba(...P.iris,.095));halo.addColorStop(.38,rgba(...P.iris,.075));halo.addColorStop(.7,rgba(...P.blue,.021));halo.addColorStop(1,rgba(...P.iris,0));c.fillStyle=halo;c.beginPath();c.arc(cx,cy,radius*1.85,0,TAU);c.fill();
+ // Tissue lobes: overlapping folded translucent sheets anchored to the same centre.
+ const layers=eco?4:ultra?9:7;for(let layer=layers-1;layer>=0;layer--){const rr=.38+layer/layers*.67;const phase=layer*1.31;path(eco?90:155,u=>point(u*TAU,rr,phase));c.closePath();const grad=c.createRadialGradient(cx-radius*.1,cy-radius*.14,radius*.03,cx,cy,span*1.4);grad.addColorStop(0,rgba(...P.warm,.03));grad.addColorStop(.28,rgba(...P.iris,.043+layer*.004));grad.addColorStop(.65,rgba(...(layer%2?P.silk:P.blue),.016+layer*.002));grad.addColorStop(1,rgba(...P.blue,.002));c.fillStyle=grad;c.fill();c.lineWidth=layer===layers-1?1.6:.8;c.strokeStyle=rgba(...(layer%3?P.iris:P.pearl),.12+(1-layer/layers)*.11);c.stroke();}
+ // Radial vasculature embedded in membrane, curving with the deformation field.
+ for(let i=0;i<anatomy.ribCount;i++){
+  const theta=i/anatomy.ribCount*TAU,phase=hash(i+e.seed)*TAU;
+  path(eco?18:35,u=>point(theta+.17*u*u*Math.sin(phase+t*.12*motion),.11+u*.90,phase));
+  c.lineWidth=i%5===0?1.5:.6;c.strokeStyle=rgba(...(i%3===0?P.pearl:P.iris),i%5===0?.28:.12);c.stroke();
+ }
+ // Organ-scale tendrils, tapered, with bifurcations and an articulated silhouette.
+ anatomy.arms.forEach((arm,i)=>{
+  const theta=arm.angle,phase=arm.phase;const reach=arm.length*(.95+form.open*.26)*(1+wind*.19);const steps=eco?20:36;
+  const armPoint=u=>{const turn=arm.curve*u*u+Math.sin(u*5+t*(.35+form.flow*.2)*motion+phase)*(.085+form.flutter*.11)*u*u;
+   const pt=point(theta+turn,.31+u*reach,phase);pt[0]+=Math.sin(u*8+t*.21*motion+phase)*radius*.017*u;pt[1]+=Math.cos(u*7+t*.23*motion+phase)*radius*.017*u;return pt;};
+  // Draw a tapering translucent web between both edges of an appendage.
+  const segments=eco?15:25;c.beginPath();for(let j=0;j<=segments;j++){const u=j/segments,p=armPoint(u),tangent=theta+arm.curve*u,thick=radius*arm.width*(1-u)**1.25*(.5+form.thickness*.65);const px=p[0]-Math.sin(tangent)*thick,py=p[1]+Math.cos(tangent)*thick;if(j===0)c.moveTo(px,py);else c.lineTo(px,py);}for(let j=segments;j>=0;j--){const u=j/segments,p=armPoint(u),tangent=theta+arm.curve*u,thick=radius*arm.width*(1-u)**1.25*(.5+form.thickness*.65);c.lineTo(p[0]+Math.sin(tangent)*thick,p[1]-Math.cos(tangent)*thick);}c.closePath();c.fillStyle=rgba(...(i%3?P.iris:P.blue),.023+form.thickness*.018);c.fill();c.strokeStyle=rgba(...P.silk,.12);c.lineWidth=.55;c.stroke();
+  path(steps,armPoint);c.lineWidth=i%3===0?1.65:.88;c.strokeStyle=rgba(...(i%3===0?P.pearl:P.iris),.23+.11*(1-wind));c.stroke();
+  if(!eco){for(let b=0;b<arm.branches;b++){const start=.35+b*.17,end=Math.min(.99,start+.22+hash(i*71+b)*.16),side=b%2?-1:1;
+    const root=armPoint(start);path(15,u=>{const base=armPoint(mix(start,end,u));const deviation=u*u*radius*(.13+.11*hash(i+b*3))*side;return [mix(root[0],base[0],u)+Math.cos(theta+Math.PI/2)*deviation,mix(root[1],base[1],u)+Math.sin(theta+Math.PI/2)*deviation];});c.strokeStyle=rgba(...P.silk,.12+.13*(1-start));c.lineWidth=.7;c.stroke();}}
+  const tip=armPoint(.985);c.fillStyle=rgba(...P.pearl,.31);c.beginPath();c.arc(...tip,1.1,0,TAU);c.fill();
+ });
+ // Soft luminous inner organ: a large complex multilobed structure, not a pinprick.
+ for(let shell=5;shell>=0;shell--){let rad=(.23+shell*.045)*(1+Math.sin(t*.54*motion)*.035);path(145,u=>{let th=u*TAU;let r=rad*(1+.12*Math.sin(th*(anatomy.lobes-1)+t*.4*motion)+.06*Math.cos(th*11-t*.22*motion));return point(th,r,shell*.42)});c.closePath();const g=c.createRadialGradient(cx-radius*.055,cy-radius*.06,0,cx,cy,span*rad*1.5);g.addColorStop(0,rgba(...P.warm,.15));g.addColorStop(.45,rgba(...(shell%2?P.pearl:P.silk),.07));g.addColorStop(1,rgba(...P.iris,.009));c.fillStyle=g;c.fill();c.strokeStyle=rgba(...(shell%2?P.pearl:P.silk),.28-shell*.023);c.lineWidth=shell===0?1.45:.85;c.stroke();}
+ // Circulating luminous vesicles follow constrained paths, not a random free-floating cloud.
+ const count=eco?160:ultra?620:360;for(let i=0;i<count;i++){const sp=this.sparks[i];const theta=sp.theta+(t*.026*motion*(i%2?1:-1));const r=sp.r*(.79+.07*Math.sin(t*.42*motion+sp.phase));const [x,y]=point(theta,r,sp.phase);const pulse=.55+.45*Math.sin(t*(.4+sp.size)*motion+sp.phase);c.fillStyle=rgba(...(i%7===0?P.pearl:i%5===0?P.blue:P.iris),(.12+sp.size*.4)*pulse);c.beginPath();c.arc(x,y,.35+sp.size*(i%21===0?1.9:1),0,TAU);c.fill();}
+ // Cardiovascular pulse: multiple luminous chambers with asynchronous breathing.
+ const pulse=1+.08*Math.sin(t*.88*motion)+.035*Math.sin(t*1.43*motion);const nucleus=span*.15*pulse;const glow=c.createRadialGradient(cx,cy,0,cx,cy,nucleus*4.8);glow.addColorStop(0,rgba(...P.warm,.72));glow.addColorStop(.10,rgba(...P.pearl,.37));glow.addColorStop(.28,rgba(...P.iris,.12));glow.addColorStop(1,rgba(...P.iris,0));c.fillStyle=glow;c.beginPath();c.arc(cx,cy,nucleus*4.8,0,TAU);c.fill();
+ for(let chamber=0;chamber<3;chamber++){const ax=cx+Math.cos(chamber*TAU/3+t*.13*motion)*nucleus*.3,ay=cy+Math.sin(chamber*TAU/3+t*.13*motion)*nucleus*.3;const g=c.createRadialGradient(ax,ay,0,ax,ay,nucleus*.9);g.addColorStop(0,rgba(...P.warm,.7));g.addColorStop(.4,rgba(...P.pearl,.22));g.addColorStop(1,rgba(...P.iris,0));c.fillStyle=g;c.beginPath();c.arc(ax,ay,nucleus*.9,0,TAU);c.fill();}
+ for(const burst of e.pulses){const u=burst.t/3.2;c.beginPath();c.ellipse(cx+(burst.x-cx)*.14,cy+(burst.y-cy)*.14,radius*(.10+u*1.62),radius*(.10+u*1.62),0,0,TAU);c.strokeStyle=rgba(...P.pearl,(1-u)*.33*burst.force);c.lineWidth=1.8*(1-u)+.2;c.stroke();}
+ // A searching filament traces the last attention target, fading slowly after mouse exit.
+ if(focus.strength>.035){let targetX=focus.x,targetY=focus.y;const d=Math.hypot(targetX-cx,targetY-cy);if(d<radius*2.9){const th=Math.atan2(targetY-cy,targetX-cx);const start=point(th,.47),end=point(th,clamp(d/span*.78,.7,1.55));c.beginPath();c.moveTo(...start);c.quadraticCurveTo(cx+(targetX-cx)*.55,cy+(targetY-cy)*.55,...end);c.strokeStyle=rgba(...P.pearl,.33*focus.strength*s.curiosity);c.lineWidth=1.1;c.stroke();}}
  c.restore();
- // peripheral reference markers
- if(W>680){c.strokeStyle='rgba(149,170,210,.14)';c.lineWidth=.7;for(const dx of [-1,1]){const x=cx+dx*rad*1.82,y=cy;c.beginPath();c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);c.stroke();}}
+ if(W>800){c.strokeStyle='rgba(153,179,213,.12)';for(let sign of [-1,1]){const x=cx+sign*radius*1.7;c.beginPath();c.moveTo(x-5,cy);c.lineTo(x+5,cy);c.moveTo(x,cy-5);c.lineTo(x,cy+5);c.stroke();}}
  }
 }
