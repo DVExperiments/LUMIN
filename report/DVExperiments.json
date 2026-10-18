@@ -1,0 +1,34 @@
+{
+  "title": "LUMIN",
+  "tagline": "A living atmosphere shaped by the weather outside.",
+  "description": "LUMIN is a browser-based generative artwork featuring a luminous artificial organism that responds to real-world weather, remembers environmental exposure, and develops a distinctive anatomy over time. Created through a five-version AI development challenge, it combines interactive digital art with weather-driven behaviour and persistent local identity.",
+  "category": "Experiments",
+  "platform": "Browser / JavaScript / Canvas 2D",
+  "year": "2026",
+  "overview": [
+    "LUMIN began as an experiment in creating the impression of digital life. Rather than displaying weather through ordinary charts and icons, it translates atmospheric conditions into the motion, colour, structure, and behaviour of a luminous organism.",
+    "Open-Meteo weather data influences its immediate responses to temperature, wind, precipitation, humidity, cloud cover, and daylight. Environmental summaries and a persistent organism seed give each visitor's organism a history that can shape its longer-term characteristics.",
+    "Visitors can interact with the creature using mouse or touch, inspect its internal states in the Observatory, or enter a separate Weather Laboratory to experiment with imagined conditions without changing their real-weather history.",
+    "Five successive versions were developed for a head-to-head AI-building challenge. Feedback and screenshots prompted a shift from an abstract radial visualisation toward a layered, asymmetric organism with tissue, luminous chambers, vascular circulation, and branching appendages. The development report records both successful changes and abandoned directions."
+  ],
+  "highlights": [
+    "Full-screen interactive generative organism with responsive motion",
+    "Real-world weather integration through Open-Meteo",
+    "Persistent environmental history and identity-dependent anatomy",
+    "Layered translucent-looking tissue, internal luminous chambers, and circulation effects",
+    "Interactive mouse and touch reactions, plus autonomous behaviour",
+    "Weather Laboratory for manual environmental experiments",
+    "Observatory displaying behaviour, environment, and adaptation",
+    "Eco, Balanced, and Ultra quality settings",
+    "Local save, import, and export with no required account",
+    "Five-version AI development competition documented in an accompanying report"
+  ],
+  "tags": ["Creative Coding", "Generative Art", "Artificial Life", "Weather", "Interactive Art", "Open-Meteo", "Browser", "JavaScript", "Canvas", "Environment", "Simulation", "AI Experiment"],
+  "cover": "assets/lumin-cover.svg",
+  "imageAlt": "Glowing violet translucent alien organism surrounded by soft light on a deep navy background, with the title LUMIN",
+  "featured": false,
+  "embed": true,
+  "visible": true,
+  "liveUrl": "https://dvexperiments.github.io/LUMIN/",
+  "notice": "LUMIN runs in the browser and uses Open-Meteo for current weather. Personal organism data is stored in this browser; a new device or browser may start with a different organism. Live data requires internet access. Development report: https://dvexperiments.github.io/LUMIN/report/"
+}
